@@ -1,17 +1,20 @@
 package com.github.noreply.users.nagarei.cameraforpc;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.util.Log;
 import android.view.WindowManager;
 import android.widget.TextView;
-import android.content.Context;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.net.Inet6Address;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.util.Enumeration;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 
@@ -65,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (serverThread != null&& !serverThread.isAlive()) {
+        if (serverThread != null && !serverThread.isAlive()) {
             serverThread.start();
         }
         disableSleep();
@@ -76,6 +79,7 @@ public class MainActivity extends AppCompatActivity {
     private byte[] cameraImage = null;
 
     private void saveCameraImage(byte[] bytes) {
+        //Log.d("MainActivity", "saveCameraImage" + Integer.toString(bytes.length));
         try {
             cameraImageLock.writeLock().lock();
             cameraImage = bytes;
@@ -99,38 +103,53 @@ public class MainActivity extends AppCompatActivity {
     private void loadPreferences() {
         //SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
 
-        {
-            Thread t = new Thread(() -> {
-                try {
-                    myIpAddress = InetAddress.getLocalHost().getHostAddress();
-                } catch (Exception e) {
-                    //TODO: ERROR
-                    Log.e("MainActivity", "loadPreferences: can not get HostAddress");
-                    myIpAddress = "";
-                }
-            });
-            t.start();
-            try {
-                t.join();
-            } catch (Exception e) {
-                //TODO: ERROR
-                Log.e("MainActivity", "loadPreferences: can not join");
-                myIpAddress = "";
-            }
-        }
+        myIpAddress = getMyIpAddress();
         Log.d("MainActivity", myIpAddress);
         myIpAddressView.setText(myIpAddress);
         //Integer port = Integer.parseInt(preferences.getString("port", "8080"));
         Integer port = 8080;
         MjpegServer.setPort(port);
     }
+    private static String getMyIpAddress() {
+
+        //InetAddress.getLocalHost().getHostAddress();
+        try {
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+
+            while (interfaces.hasMoreElements()) {
+                NetworkInterface intf = interfaces.nextElement();
+                Enumeration<InetAddress> addresses = intf.getInetAddresses();
+
+                while (addresses.hasMoreElements()) {
+                    InetAddress addr = addresses.nextElement();
+
+                    if (addr.isLoopbackAddress()) {
+                        continue;
+                    }
+                    String h_addr = addr.getHostAddress();
+                    if ("0.0.0.0".equals(h_addr) || h_addr.contains("dummy")) {
+                        continue;
+                    }
+                    if (addr instanceof Inet6Address){
+                        continue;
+                    }
+                    return h_addr;
+                } // while
+            } // while
+        } catch (Exception e) {
+        }
+        Log.e("MainActivity", "can not get HostAddress");
+        return "";
+    }
 
     //スリープ禁止設定
     private PowerManager.WakeLock wakeLock;
+
     private void disableSleep() {
         PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
         wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "CameraForPC:Camera-Lock");
     }
+
     private void enableSleep() {
         if (wakeLock.isHeld()) {
             wakeLock.release();
