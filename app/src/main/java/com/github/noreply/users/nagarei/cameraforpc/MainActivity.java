@@ -3,9 +3,11 @@ package com.github.noreply.users.nagarei.cameraforpc;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.PowerManager;
 import android.util.Log;
 import android.view.WindowManager;
 import android.widget.TextView;
+import android.content.Context;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -15,9 +17,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class MainActivity extends AppCompatActivity {
     private CameraView cameraView;
-    private static final int MY_CAMERA_REQUEST_CODE = 1120;
+    private static final int MY_CAMERA_REQUEST_CODE = 1121;
     private TextView myIpAddressView;
-    private Thread serverThread = new Thread(new MjpegServer(this::loadCameraImage));
+    private Thread serverThread = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,18 +40,18 @@ public class MainActivity extends AppCompatActivity {
 
         if (
             checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED ||
+            checkSelfPermission(Manifest.permission.INTERNET) != PackageManager.PERMISSION_GRANTED ||
             checkSelfPermission(Manifest.permission.ACCESS_WIFI_STATE) != PackageManager.PERMISSION_GRANTED ||
             checkSelfPermission(Manifest.permission.ACCESS_NETWORK_STATE) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[]{Manifest.permission.CAMERA, Manifest.permission.ACCESS_WIFI_STATE, Manifest.permission.ACCESS_NETWORK_STATE}, MY_CAMERA_REQUEST_CODE);
-        }
-        if (
-            checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED ||
-            checkSelfPermission(Manifest.permission.ACCESS_WIFI_STATE) != PackageManager.PERMISSION_GRANTED ||
-            checkSelfPermission(Manifest.permission.ACCESS_NETWORK_STATE) != PackageManager.PERMISSION_GRANTED) {
-            Log.e("MainActivity", "checkSelfPermission: fail");
-            return;
+            requestPermissions(new String[]{
+                    Manifest.permission.CAMERA,
+                    Manifest.permission.INTERNET,
+                    Manifest.permission.ACCESS_WIFI_STATE,
+                    Manifest.permission.ACCESS_NETWORK_STATE
+            }, MY_CAMERA_REQUEST_CODE);
         }
 
+        serverThread = new Thread(new MjpegServer(this::loadCameraImage));
         loadPreferences();
     }
 
@@ -57,14 +59,16 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         cameraView.stop();
+        enableSleep();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        if (!serverThread.isAlive()) {
+        if (serverThread != null&& !serverThread.isAlive()) {
             serverThread.start();
         }
+        disableSleep();
         cameraView.start();
     }
 
@@ -119,5 +123,17 @@ public class MainActivity extends AppCompatActivity {
         //Integer port = Integer.parseInt(preferences.getString("port", "8080"));
         Integer port = 8080;
         MjpegServer.setPort(port);
+    }
+
+    //スリープ禁止設定
+    private PowerManager.WakeLock wakeLock;
+    private void disableSleep() {
+        PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "CameraForPC:Camera-Lock");
+    }
+    private void enableSleep() {
+        if (wakeLock.isHeld()) {
+            wakeLock.release();
+        }
     }
 }
