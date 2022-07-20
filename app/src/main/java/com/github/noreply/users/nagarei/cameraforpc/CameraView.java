@@ -15,9 +15,8 @@ public class CameraView extends ViewGroup {
     private final SurfaceView surfaceView;
     private boolean isStartRequested = false;
     private boolean isSurfaceViewAvailable = false;
-    private Camera.PreviewCallback previewCallback;
     public void setPreviewCallback(Camera.PreviewCallback previewCallbackParam) {
-        camera.setPreviewCallback(previewCallback);
+        camera.setPreviewCallback(previewCallbackParam);
     }
 
     public CameraView(Context context) {
