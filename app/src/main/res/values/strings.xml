@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Camera</string>
+    <string name="view_photo">Photo</string>
+    <string name="button_photo">Photo</string>
+    <string name="toast_no_activities">No activities for taking photoes</string>
+</resources>
