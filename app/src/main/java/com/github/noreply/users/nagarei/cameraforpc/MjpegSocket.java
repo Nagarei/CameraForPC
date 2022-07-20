@@ -1,19 +1,19 @@
 package com.github.noreply.users.nagarei.cameraforpc;
 
+import android.util.Log;
+
 import java.net.Socket;
 import java.io.DataOutputStream;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class MjpegSocket implements Runnable{
     private Socket socket;
     private String boundary = "CameraServeDataBoundary";
     private MjpegServer.ImageGetter imageGetter;
-    MjpegSocket(MjpegServer.ImageGetter imageGetter) {
-        super();
-        this.imageGetter = imageGetter;
-    }
-
-    public MjpegSocket(Socket socket) {
+    public MjpegSocket(Socket socket, MjpegServer.ImageGetter imageGetter) {
         this.socket = socket;
+        this.imageGetter = imageGetter;
     }
 
     @Override
@@ -35,15 +35,37 @@ public class MjpegSocket implements Runnable{
                     "--" + boundary + "\r\n").getBytes());
             stream.flush();
 
-            while(true) {
-                byte[] frame = imageGetter.get();
+            Timer timer = new Timer();
+            TimerTask task = new TimerTask() {
+                public void run() {
+                    try {
+                        if (!socket.isConnected()) {
+                            if (!socket.isClosed()) {
+                                socket.close();
+                            }
+                            timer.cancel();
+                            return;
+                        }
+                        byte[] frame = imageGetter.get();
+                        if (frame == null) {
+                            //Log.e("MjpegSocket", "nothing to send...");
+                            return;
+                        }
 
-                stream.write(("Content-type: image/jpeg\r\n" +
-                        "Content-Length: " + frame.length + "\r\n" +
-                        "\r\n").getBytes());
-                stream.write(frame);
-                stream.write(("\r\n--" + boundary + "\r\n").getBytes());
-            }
+                        stream.write(("Content-type: image/jpeg\r\n" +
+                                "Content-Length: " + frame.length + "\r\n" +
+                                "\r\n").getBytes());
+                        stream.write(frame);
+                        stream.write(("\r\n--" + boundary + "\r\n").getBytes());
+                        stream.flush();
+                    } catch (java.net.SocketException e) {
+                        timer.cancel();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            };
+            timer.scheduleAtFixedRate(task, 0, 33);
 
         } catch (Exception e) {
             e.printStackTrace();

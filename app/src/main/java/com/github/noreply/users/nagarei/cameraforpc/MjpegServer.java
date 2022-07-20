@@ -1,5 +1,7 @@
 package com.github.noreply.users.nagarei.cameraforpc;
 
+import android.util.Log;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -38,7 +40,8 @@ public class MjpegServer implements Runnable {
             try {
                 Socket socket = server.accept();
                 if (socket.getInetAddress().isSiteLocalAddress()) {
-                    MjpegSocket mjpegSocket = new MjpegSocket(socket);
+                    Log.d("MjpegServer", "talkToClient: " + socket.getInetAddress().getHostAddress());
+                    MjpegSocket mjpegSocket = new MjpegSocket(socket, imageGetter);
                     new Thread(mjpegSocket).start();
                 } else {
                     socket.close();
