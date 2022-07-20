@@ -23,6 +23,7 @@ import android.view.Surface;
 
 import androidx.core.app.ActivityCompat;
 
+import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,14 +32,28 @@ import java.util.List;
 
 public class Camera {
     // utility
+    private HandlerThread backgroundHandlerThread;
     private Handler backgroundHandler;
     private void startBackgroundHandler() {
         if (backgroundHandler != null) {
             return;
         }
-        HandlerThread backgroundThread = new HandlerThread("CameraBackground");
-        backgroundThread.start();
-        backgroundHandler = new Handler(backgroundThread.getLooper());
+        backgroundHandlerThread = new HandlerThread("CameraBackground");
+        backgroundHandlerThread.start();
+        backgroundHandler = new Handler(backgroundHandlerThread.getLooper());
+    }
+    private void stopBackgroundHandler() {
+        if (backgroundHandler == null) {
+            return;
+        }
+        try {
+            backgroundHandlerThread.quitSafely();
+            backgroundHandlerThread.join();
+            backgroundHandlerThread = null;
+            backgroundHandler = null;
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
     public void setPreviewCallback(PreviewCallback previewCallbackParam) {
         previewCallback = previewCallbackParam;
@@ -48,6 +63,7 @@ public class Camera {
         openCamera(context);
     }
     public void stop() {
+        Log.d("Camera", "stop");
         if (null != captureSession) {
             captureSession.close();
             captureSession = null;
@@ -60,7 +76,7 @@ public class Camera {
             imageReaderJPG.close();
             imageReaderJPG = null;
         }
-        //stopBackgroundHandler();
+        stopBackgroundHandler();
     }
 
     // Camera
@@ -146,9 +162,12 @@ public class Camera {
 
     // CameraPreview
     private final int IMAGE_READER_MAX_IMAGES = 4;
+    private final int JPEG_QUALITY = 80;
     private ImageReader imageReaderJPG;
     private Surface previewSurface;
     private CameraCaptureSession captureSession;
+    private final int frameSizeW = 640;
+    private final int frameSizeH = 480;
 
     public interface PreviewCallback {
         void onPreview(byte[] bytes);
@@ -181,12 +200,43 @@ public class Camera {
             byte[] bytes = new byte[buffer.capacity()];
             buffer.get(bytes);
 
-            //TODO: resize
+            // resize
+            Bitmap bitmap = BitmapFactory.decodeByteArray(
+                    bytes, 0, bytes.length, null);
+            bitmap = resizeBitmap(bitmap, frameSizeW, frameSizeH);
+            bytes = convBitmapToJpegByteArray(bitmap);
 
             if(previewCallback != null) {
                 previewCallback.onPreview(bytes);
             }
         }
+    }
+    private static Bitmap resizeBitmap(Bitmap source, int width, int height) {
+        int src_width = source.getWidth() ;
+        int src_height = source.getHeight();
+        int limit_width = (int)( src_width * 0.8 );
+        int limit_height = (int)( src_height * 0.8 );
+        if( width > limit_width) {
+            return source;
+        }
+        if( height >  limit_height) {
+            return source;
+        }
+
+        Bitmap bitmap = Bitmap.createScaledBitmap(
+                source, width, height, true );
+        return bitmap;
+    }
+    private byte[] convBitmapToJpegByteArray(Bitmap bitmap) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try {
+            bitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, baos);
+            return baos.toByteArray();
+        } catch (Exception e) {
+            e.printStackTrace();
+            Log.e("Camera", "failed to convert");
+        }
+        return null;
     }
 
     private void createCameraPreviewSession() {
@@ -216,7 +266,7 @@ public class Camera {
                     captureSession = cameraCaptureSession;
                     try {
                         // Auto focus should be continuous for camera preview.
-                        previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_AUTO);
+                        previewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
                         //if (isFlashSupported) {
                         //    previewRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, mFlashMode);
                         //}
