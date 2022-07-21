@@ -48,6 +48,7 @@ public class MjpegServer implements Runnable {
                     MjpegSocket mjpegSocket = new MjpegSocket(socket, imageGetter);
                     new Thread(mjpegSocket).start();
                 } else {
+                    lastAddr = null;//MEMO: 同じアドレスから間をおいて二回アクセスしたときに通すようにする処理
                     socket.close();
                 }
             } catch (SocketTimeoutException ste) {
