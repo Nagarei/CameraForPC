@@ -186,10 +186,26 @@ public class Camera {
         Size[] supportedSizes = map.getOutputSizes(ImageFormat.JPEG);
         Size jpegSizeLargest = Collections.max(Arrays.asList(supportedSizes),
                 (lhs, rhs) -> Long.signum((long) lhs.getWidth() * lhs.getHeight() - (long) rhs.getWidth() * rhs.getHeight()));
+        Size jpegSize = jpegSizeLargest;
+
+        //640*480以下の中での最大
+        /*
+        Size jpegSize = Collections.min(Arrays.asList(supportedSizes),
+                (lhs, rhs) -> Long.signum((long) lhs.getWidth() * lhs.getHeight() - (long) rhs.getWidth() * rhs.getHeight()));
+        long nowScore = (long)jpegSize.getWidth() * (long)jpegSize.getHeight();
+        for (Size supS :supportedSizes) {
+            long score = (long)supS.getWidth() * (long)supS.getHeight();
+            if (640*480 < score) { continue; }
+            if (nowScore < score) {
+                nowScore = score;
+                jpegSize = supS;
+            }
+        }*/
+        Log.d("setUpImageReaderJpeg", jpegSize.toString());
 
         imageReaderJPG = ImageReader.newInstance(
-                jpegSizeLargest.getWidth(),
-                jpegSizeLargest.getHeight(),
+                jpegSize.getWidth(),
+                jpegSize.getHeight(),
                 ImageFormat.JPEG, IMAGE_READER_MAX_IMAGES);
         startBackgroundHandler();
         imageReaderJPG.setOnImageAvailableListener(
@@ -197,7 +213,7 @@ public class Camera {
     }
     private void callPreviewCallback(ImageReader reader) {
         try (
-                Image image = reader.acquireNextImage()
+                Image image = reader.acquireLatestImage()
         ) {
             ByteBuffer buffer = image.getPlanes()[0].getBuffer();
             byte[] bytes = new byte[buffer.capacity()];
