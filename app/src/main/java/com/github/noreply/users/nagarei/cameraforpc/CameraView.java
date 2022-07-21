@@ -69,8 +69,7 @@ public class CameraView extends ViewGroup {
         }
         isStartRequested = false;
         Log.d("CameraView", "CameraView.start: ");
-        SurfaceHolder holder = surfaceView.getHolder();
-        camera.start(context, holder.getSurface());
+        camera.start(context, surfaceView);
     }
     public void stop() {
         isStartRequested = false;

@@ -20,6 +20,8 @@ import android.os.HandlerThread;
 import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 
 import androidx.core.app.ActivityCompat;
 
@@ -58,8 +60,9 @@ public class Camera {
     public void setPreviewCallback(PreviewCallback previewCallbackParam) {
         previewCallback = previewCallbackParam;
     }
-    public void start(Context context, Surface surface) {
-        previewSurface = surface;
+    public void start(Context context, SurfaceView surfaceView) {
+        SurfaceHolder holder = surfaceView.getHolder();
+        previewSurface = holder.getSurface();
         openCamera(context);
     }
     public void stop() {
@@ -166,7 +169,7 @@ public class Camera {
     private ImageReader imageReaderJPG;
     private Surface previewSurface;
     private CameraCaptureSession captureSession;
-    private final int frameSizeW = 640;
+    //private final int frameSizeW = 640;
     private final int frameSizeH = 480;
 
     public interface PreviewCallback {
@@ -203,7 +206,7 @@ public class Camera {
             // resize
             Bitmap bitmap = BitmapFactory.decodeByteArray(
                     bytes, 0, bytes.length, null);
-            bitmap = resizeBitmap(bitmap, frameSizeW, frameSizeH);
+            bitmap = resizeBitmapWithH(bitmap, frameSizeH);
             bytes = convBitmapToJpegByteArray(bitmap);
 
             if(previewCallback != null) {
@@ -211,11 +214,12 @@ public class Camera {
             }
         }
     }
-    private static Bitmap resizeBitmap(Bitmap source, int width, int height) {
+    private static Bitmap resizeBitmapWithH(Bitmap source, int height) {
         int src_width = source.getWidth() ;
         int src_height = source.getHeight();
         int limit_width = (int)( src_width * 0.8 );
         int limit_height = (int)( src_height * 0.8 );
+        int width = src_width * height / src_height;
         if( width > limit_width) {
             return source;
         }
