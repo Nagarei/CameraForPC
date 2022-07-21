@@ -75,25 +75,19 @@ public class MainActivity extends AppCompatActivity {
         cameraView.start();
     }
 
-    private final ReentrantReadWriteLock cameraImageLock = new ReentrantReadWriteLock();
+    private final Object cameraImageLock = new Object();
     private byte[] cameraImage = null;
 
     private void saveCameraImage(byte[] bytes) {
         //Log.d("MainActivity", "saveCameraImage" + Integer.toString(bytes.length));
-        try {
-            cameraImageLock.writeLock().lock();
+        synchronized (cameraImageLock) {
             cameraImage = bytes;
-        } finally {
-            cameraImageLock.writeLock().unlock();
         }
     }
 
     private byte[] loadCameraImage() {
-        try {
-            cameraImageLock.readLock().lock();
+        synchronized (cameraImageLock) {
             return cameraImage;
-        } finally {
-            cameraImageLock.readLock().unlock();
         }
     }
 
