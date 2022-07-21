@@ -56,6 +56,6 @@ PC側
 
 ## スマホ側画面
 
-![カメラ画像の上にIPを載せる](screenshot.png)
+![カメラ画像の上にIPを載せる](screenshot.jpg)
 
 
