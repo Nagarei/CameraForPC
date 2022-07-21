@@ -25,4 +25,19 @@ https://github.com/arktronic/cameraserve
 * プレゼン中に対話的に見せたいため、写真を撮った後PCに共有する手間を省きたい。
 * 様々な角度から見せたいため、角度の自由が利かない内臓カメラでは不便。
 
+## 基本技術
+
+### スマホ(Android)側
+
+* camera2 APIにより、カメラ映像を取得
+* スマホ画面に取得した映像を表示
+* アプリをHTTPサーバーとして、通信を待ち受け
+   * 通信が来た場合、 `Content-Type: multipart/x-mixed-replace` として画像データを送り続ける
+
+### PC側
+Webブラウザ
+http通信によりAndroidにアクセスし、画像データを受け取って表示する
+
+
+
 
