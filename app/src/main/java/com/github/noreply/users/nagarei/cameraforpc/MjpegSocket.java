@@ -10,9 +10,9 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class MjpegSocket implements Runnable{
-    private Socket socket;
-    private String boundary = "CameraServeDataBoundary";
-    private MjpegServer.ImageGetter imageGetter;
+    private final Socket socket;
+    private final String boundary = "CameraServeDataBoundary";
+    private final MjpegServer.ImageGetter imageGetter;
     public MjpegSocket(Socket socket, MjpegServer.ImageGetter imageGetter) {
         this.socket = socket;
         this.imageGetter = imageGetter;
