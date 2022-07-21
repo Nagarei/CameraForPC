@@ -105,10 +105,11 @@ public class MainActivity extends AppCompatActivity {
 
         myIpAddress = getMyIpAddress();
         Log.d("MainActivity", myIpAddress);
-        myIpAddressView.setText(myIpAddress);
         //Integer port = Integer.parseInt(preferences.getString("port", "8080"));
         Integer port = 8080;
         MjpegServer.setPort(port);
+
+        myIpAddressView.setText(myIpAddress + ":" + port.toString());
     }
     private static String getMyIpAddress() {
 
