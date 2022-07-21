@@ -3,6 +3,7 @@ package com.github.noreply.users.nagarei.cameraforpc;
 import android.util.Log;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
@@ -36,11 +37,14 @@ public class MjpegServer implements Runnable {
             return;
         }
 
+        InetAddress lastAddr = null;
         while(true) {
             try {
                 Socket socket = server.accept();
-                if (socket.getInetAddress().isSiteLocalAddress()) {
-                    Log.d("MjpegServer", "talkToClient: " + socket.getInetAddress().getHostAddress());
+                InetAddress target = socket.getInetAddress();
+                if (target.isSiteLocalAddress() && !target.equals(lastAddr)) {
+                    lastAddr = target;
+                    Log.d("MjpegServer", "talkToClient: " + target.getHostAddress());
                     MjpegSocket mjpegSocket = new MjpegSocket(socket, imageGetter);
                     new Thread(mjpegSocket).start();
                 } else {
