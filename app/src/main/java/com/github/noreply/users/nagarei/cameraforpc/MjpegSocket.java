@@ -2,6 +2,8 @@ package com.github.noreply.users.nagarei.cameraforpc;
 
 import android.util.Log;
 
+import java.io.BufferedOutputStream;
+import java.io.OutputStream;
 import java.net.Socket;
 import java.io.DataOutputStream;
 import java.util.Timer;
@@ -21,7 +23,7 @@ public class MjpegSocket implements Runnable{
         android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
 
         try {
-            DataOutputStream stream = new DataOutputStream(socket.getOutputStream());
+            OutputStream stream = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
 
             stream.write(("HTTP/1.0 200 OK\r\n" +
                     "Server: CameraServe\r\n" +
@@ -43,6 +45,7 @@ public class MjpegSocket implements Runnable{
                             if (!socket.isClosed()) {
                                 socket.close();
                             }
+                            Log.w("MjpegSocket", "end");
                             timer.cancel();
                             return;
                         }
@@ -59,6 +62,7 @@ public class MjpegSocket implements Runnable{
                         stream.write(("\r\n--" + boundary + "\r\n").getBytes());
                         stream.flush();
                     } catch (java.net.SocketException e) {
+                        Log.w("MjpegSocket", "end");
                         timer.cancel();
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -69,6 +73,7 @@ public class MjpegSocket implements Runnable{
 
         } catch (Exception e) {
             e.printStackTrace();
+            Log.w("MjpegSocket", "end");
         }
     }
 }

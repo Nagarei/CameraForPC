@@ -50,6 +50,7 @@ public class MjpegServer implements Runnable {
                 // continue silently
             } catch (IOException ioe) {
                 ioe.printStackTrace();
+                return;
             }
         }
 
